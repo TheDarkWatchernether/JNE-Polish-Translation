@@ -1,20 +1,18 @@
 package net.jadenxgamer.netherexp.registry;
 
 import net.jadenxgamer.netherexp.NetherExp;
-import net.jadenxgamer.netherexp.core.entity.Wisp;
-import net.jadenxgamer.netherexp.core.item.CerebrageSeedItem;
-import net.jadenxgamer.netherexp.core.item.MobBottleItem;
-import net.jadenxgamer.netherexp.core.item.NonConsumableItem;
+import net.jadenxgamer.netherexp.core.entity.*;
+import net.jadenxgamer.netherexp.core.item.*;
 import net.jadenxgamer.netherexp.core.keys.JNEJukeboxSongs;
 import net.jadenxgamer.netherexp.core.keys.JNETrimPatterns;
 import net.jadenxgamer.netherexp.core.misc.JNEFoods;
 import net.jadenxgamer.netherexp.util.RegistryHelper;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.Rarity;
-import net.minecraft.world.item.SmithingTemplateItem;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.item.*;
+import net.minecraft.world.level.block.DispenserBlock;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -49,10 +47,10 @@ public class JNEItems {
             new Item(new Item.Properties()));
 
     public static final Supplier<Item> LIGHTSPORES = ITEMS.register("lightspores", () ->
-            new Item(new Item.Properties()));
+            new GlowsporesItem(JNEParticleTypes.LIGHTSPORE, new Item.Properties()));
 
     public static final Supplier<Item> NIGHTSPORES = ITEMS.register("nightspores", () ->
-            new Item(new Item.Properties()));
+            new GlowsporesItem(JNEParticleTypes.NIGHTSPORE, new Item.Properties()));
 
     public static final Supplier<Item> ANTIDOTE = ITEMS.register("antidote", () ->
             new Item(new Item.Properties()));
@@ -79,7 +77,7 @@ public class JNEItems {
             new Item(new Item.Properties()));
 
     public static final Supplier<Item> PHASMO_ARROW = ITEMS.register("phasmo_arrow", () ->
-            new Item(new Item.Properties()));
+            new ElysiumArrowItem(PhasmoArrow.class, AbstractArrow.Pickup.ALLOWED, new Item.Properties()));
 
     public static final Supplier<Item> BANSHEE_ROD = ITEMS.register("banshee_rod", () ->
             new Item(new Item.Properties()));
@@ -88,7 +86,7 @@ public class JNEItems {
             new Item(new Item.Properties()));
 
     public static final Supplier<Item> WILL_O_WISP = ITEMS.register("will_o_wisp", () ->
-            new Item(new Item.Properties()));
+            new WillOWispItem(new Item.Properties()));
 
     public static final Supplier<Item> STRIDITE = ITEMS.register("stridite", () ->
             new Item(new Item.Properties().fireResistant()));
@@ -100,16 +98,16 @@ public class JNEItems {
             new Item(new Item.Properties().rarity(Rarity.RARE).fireResistant()));
 
     public static final Supplier<Item> SHOTGUN_FIST = ITEMS.register("shotgun_fist", () ->
-            new Item(new Item.Properties().stacksTo(1).durability(512).fireResistant().rarity(Rarity.RARE)));
+            new ShotgunFistItem(new Item.Properties().stacksTo(1).durability(512).fireResistant().rarity(Rarity.RARE)));
 
     public static final Supplier<Item> PUMP_CHARGE_SHOTGUN = ITEMS.register("pump_charge_shotgun", () ->
             new Item(new Item.Properties().stacksTo(1).durability(640).fireResistant().rarity(Rarity.EPIC)));
 
     public static final Supplier<Item> CLARET_SIGN = ITEMS.register("claret_sign", () ->
-            new Item(new Item.Properties().stacksTo(16)));
+            new SignItem(new Item.Properties().stacksTo(16), JNEBlocks.CLARET_SIGN.get(), JNEBlocks.CLARET_WALL_SIGN.get()));
 
     public static final Supplier<Item> CLARET_HANGING_SIGN = ITEMS.register("claret_hanging_sign", () ->
-            new Item(new Item.Properties().stacksTo(16)));
+            new HangingSignItem(JNEBlocks.CLARET_HANGING_SIGN.get(), JNEBlocks.CLARET_WALL_HANGING_SIGN.get(), new Item.Properties().stacksTo(16)));
 
     public static final Supplier<Item> MUSIC_DISC_CRICKET  = ITEMS.register("music_disc_cricket", () ->
             new Item(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
@@ -127,19 +125,22 @@ public class JNEItems {
             new DeferredSpawnEggItem(JNEEntityType.APPARITION, 4864303, 699311, new Item.Properties()));
 
     public static final Supplier<Item> VESSEL_SPAWN_EGG = ITEMS.register("vessel_spawn_egg", () ->
-            new DeferredSpawnEggItem(JNEEntityType.WISP, 4864303, 12698049, new Item.Properties()));
+            new DeferredSpawnEggItem(JNEEntityType.VESSEL, 4864303, 12698049, new Item.Properties()));
 
     public static final Supplier<Item> ECTO_SLAB_SPAWN_EGG = ITEMS.register("ecto_slab_spawn_egg", () ->
             new DeferredSpawnEggItem(JNEEntityType.WISP, 4864303, 1788232, new Item.Properties()));
 
     public static final Supplier<Item> BANSHEE_SPAWN_EGG = ITEMS.register("banshee_spawn_egg", () ->
-            new DeferredSpawnEggItem(JNEEntityType.WISP, 1985382, 1788232, new Item.Properties()));
+            new DeferredSpawnEggItem(JNEEntityType.BANSHEE, 1985382, 1788232, new Item.Properties()));
 
     public static final Supplier<Item> STAMPEDE_SPAWN_EGG = ITEMS.register("stampede_spawn_egg", () ->
             new DeferredSpawnEggItem(JNEEntityType.WISP, 4864303, 10236982, new Item.Properties()));
 
     public static final Supplier<Item> CARCASS_SPAWN_EGG = ITEMS.register("carcass_spawn_egg", () ->
             new DeferredSpawnEggItem(JNEEntityType.WISP, 8263192, 4066060, new Item.Properties()));
+
+    public static final Supplier<Item> FALSE_CARCASS_SPAWN_EGG = ITEMS.register("false_carcass_spawn_egg", () ->
+            new DeferredSpawnEggItem(JNEEntityType.WISP, 4066060, 8263192, new Item.Properties()));
 
     public static final Supplier<Item> SEALED_POTTERY_SHERD = ITEMS.register("sealed_pottery_sherd", () ->
             new Item(new Item.Properties()));
@@ -181,8 +182,32 @@ public class JNEItems {
             new Item(new Item.Properties()));
 
     public static final Supplier<Item> ANCIENT_TORCH = ITEMS.register("ancient_torch", () ->
-            new Item(new Item.Properties()));
+            new StandingAndWallBlockItem(JNEBlocks.ANCIENT_TORCH.get(), JNEBlocks.ANCIENT_WALL_TORCH.get(), new Item.Properties(), Direction.DOWN));
 
+    public static final Supplier<Item> ANCIENT_CANDLE = ITEMS.register("ancient_candle", () ->
+            new UpwardsStackingBlockItem(JNEBlocks.ANCIENT_CANDLE.get(), new Item.Properties()));
+
+    public static final Supplier<Item> OCHRE_FROGMIST = ITEMS.register("ochre_frogmist", () ->
+            new PlaceOnWaterBlockItem(JNEBlocks.OCHRE_FROGMIST.get(), new Item.Properties()));
+
+    public static final Supplier<Item> PEARLESCENT_FROGMIST = ITEMS.register("pearlescent_frogmist", () ->
+            new PlaceOnWaterBlockItem(JNEBlocks.PEARLESCENT_FROGMIST.get(), new Item.Properties()));
+
+    public static final Supplier<Item> VERDANT_FROGMIST = ITEMS.register("verdant_frogmist", () ->
+            new PlaceOnWaterBlockItem(JNEBlocks.VERDANT_FROGMIST.get(), new Item.Properties()));
+
+    public static final Supplier<Item> PYROCLAST_CRUSTS = ITEMS.register("pyroclast_crusts", () ->
+            new PlaceOnWaterBlockItem(JNEBlocks.PYROCLAST_CRUSTS.get(), new Item.Properties()));
+
+    public static final Supplier<Item> SHOTGUN_SHELL = ITEMS.register("shotgun_shell", () ->
+            new ShotgunShellItem(ShotgunPellet.class, new Item.Properties()));
+
+    public static final Supplier<Item> SLUG_SHOTGUN_SHELL = ITEMS.register("slug_shotgun_shell", () ->
+            new ShotgunShellItem(SlugPellet.class, new Item.Properties()));
+
+    public static final Supplier<Item> PHASMO_SHOTGUN_SHELL = ITEMS.register("phasmo_shotgun_shell", () ->
+            new ShotgunShellItem(PhasmoPellet.class, new Item.Properties()));
+    
     /**
      * Artifacts
      */
@@ -201,5 +226,9 @@ public class JNEItems {
                         RegistryHelper.vanillaRegister(registry, "music_disc_tears", () -> new Item(new Item.Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(JNEJukeboxSongs.TEARS)));
                 }
         );
+    }
+
+    public static void setup() {
+        DispenserBlock.registerProjectileBehavior(PHASMO_ARROW.get());
     }
 }

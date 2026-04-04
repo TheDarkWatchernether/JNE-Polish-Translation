@@ -72,7 +72,7 @@ public class GeyserBlock extends Block {
 
         Vec3 velocity = entity.getDeltaMovement();
         entity.push(velocity.x, JNEConfigs.GEYSER_HEIGHT_VELOCITY.get(), velocity.z);
-        level.playSound(null, pos, JNESoundEvents.GEYSER_STEAM.get(), SoundSource.BLOCKS, 1.0f, 1.0f);
+        level.playSound(null, pos, JNESoundEvents.GEYSER_STEAM.get(), SoundSource.BLOCKS, 0.5f, 1.0f);
         level.setBlock(pos, state.setValue(COOLDOWN, true), Block.UPDATE_ALL);
         level.scheduleTick(pos, this, JNEConfigs.GEYSER_COOLDOWN.get() * 20);
     }
@@ -101,22 +101,18 @@ public class GeyserBlock extends Block {
         double x = pos.getX();
         double y = pos.getY();
         double z = pos.getZ();
-        if (state.getValue(COOLDOWN)) {
-            for (int i = 0; i < 3; ++i) {
-                level.addParticle(smokeParticle.get(), true, x + 0.5, y + 1.4, z + 0.5, 0.0, 0.15, 0.0);
-            }
-        }
+        if (state.getValue(COOLDOWN)) level.addParticle(smokeParticle.get(), true, x + 0.5, y + 1.4, z + 0.5, 0.0, 0.15, 0.0);
 
         if (!state.getValue(ACTIVE)) return;
 
         boolean inHomeBiome = level.getBiome(pos).is(this.homeBiome);
-        BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+        BlockPos.MutableBlockPos mPos = new BlockPos.MutableBlockPos();
         if (!inHomeBiome) {
             for (int i = 0; i < 14; ++i) {
-                mutablePos.set(x + Mth.nextInt(random, -20, 20), y + random.nextInt(20), z + Mth.nextInt(random, -20, 20));
-                BlockState mutableState = level.getBlockState(mutablePos);
-                if (mutableState.isSolidRender(level, mutablePos)) continue;
-                level.addParticle(ashParticle.get(), mutablePos.getX() + random.nextDouble(), mutablePos.getY() + random.nextDouble(), mutablePos.getZ() + random.nextDouble(), 0.0, 0.0, 0.0);
+                mPos.set(x + Mth.nextInt(random, -20, 20), y + random.nextInt(20), z + Mth.nextInt(random, -20, 20));
+                BlockState mutableState = level.getBlockState(mPos);
+                if (mutableState.isSolidRender(level, mPos)) continue;
+                level.addParticle(ashParticle.get(), mPos.getX() + random.nextDouble(), mPos.getY() + random.nextDouble(), mPos.getZ() + random.nextDouble(), 0.0, 0.0, 0.0);
             }
         }
 

@@ -1,6 +1,7 @@
 package net.jadenxgamer.netherexp.util;
 
 import com.mojang.serialization.MapCodec;
+import net.jadenxgamer.netherexp.core.item.GargoyleStatueItem;
 import net.jadenxgamer.netherexp.registry.JNEBlocks;
 import net.jadenxgamer.netherexp.registry.JNEItems;
 import net.jadenxgamer.netherexp.registry.JNEParticleTypes;
@@ -13,6 +14,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
@@ -29,6 +31,12 @@ public class RegistryHelper {
     public static <T extends Block> Supplier<T> registerItemPropertiesBlock(String name, Supplier<T> block, Item.Properties properties) {
         Supplier<T> toReturn = JNEBlocks.BLOCKS.register(name, block);
         JNEItems.ITEMS.register(name, () -> new BlockItem(toReturn.get(), properties));
+        return toReturn;
+    }
+
+    public static <T extends Block> Supplier<T> registerGargoyleStatue(String name, Supplier<T> block, Item.Properties properties) {
+        Supplier<T> toReturn = JNEBlocks.BLOCKS.register(name, block);
+        JNEItems.ITEMS.register(name, () -> new GargoyleStatueItem(toReturn.get(), properties.stacksTo(16)));
         return toReturn;
     }
 

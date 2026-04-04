@@ -1,0 +1,159 @@
+package net.jadenxgamer.netherexp.core.worldgen.feature;
+
+import com.mojang.serialization.Codec;
+import net.jadenxgamer.netherexp.core.keys.JNETags;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
+import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class NetherSpeleothemFeature extends Feature<NoneFeatureConfiguration> {
+
+    private static final int MAX_VERTICAL_DEVIATION = 8;
+
+    public NetherSpeleothemFeature(Codec<NoneFeatureConfiguration> codec) {
+        super(codec);
+    }
+
+    //todo: RAHHHHH I'M LOSING MY MIND, WHY IS IT BLEEDING INTO TREES AHHHH, FUCK ME
+
+    @Override
+    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+        WorldGenLevel level = context.level();
+        BlockPos origin = context.origin();
+        RandomSource random = context.random();
+
+        int maxScan = 64;
+        BlockPos centerCeiling = findSurface(level, origin, Direction.UP, maxScan);
+        BlockPos centerFloor = findSurface(level, origin, Direction.DOWN, maxScan);
+
+        if (centerCeiling == null || centerFloor == null) return false;
+
+        int minY = centerFloor.getY();
+        int maxY = centerCeiling.getY();
+        int totalHeight = maxY - minY;
+
+        // Maybe this is too harsh.
+        if (totalHeight < 4) return false;
+
+        float baseRadius = Mth.clamp((totalHeight / 10.0f) + 1.0f, 1.5f, 7.0f);
+        int scanRadius = Mth.ceil(baseRadius * 2.5f);
+
+        List<ColumnData> validColumns = new ArrayList<>();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        boolean anyColumnOutOfRange = false;
+        for (int x = -scanRadius; x <= scanRadius; x++) {
+            for (int z = -scanRadius; z <= scanRadius; z++) {
+                double distSq = x * x + z * z;
+                double dist = Math.sqrt(distSq);
+                if (dist > baseRadius * 2.5) continue;
+
+                cursor.set(origin.getX() + x, origin.getY(), origin.getZ() + z);
+
+                BlockPos localCeiling = findSurface(level, cursor, Direction.UP, maxScan);
+                BlockPos localFloor = findSurface(level, cursor, Direction.DOWN, maxScan);
+
+                if (localCeiling == null || localFloor == null) {
+                    anyColumnOutOfRange = true;
+                    break;
+                }
+
+                int localMinY = localFloor.getY();
+                int localMaxY = localCeiling.getY();
+
+                boolean floorTooLow = localMinY < minY - MAX_VERTICAL_DEVIATION;
+                boolean ceilingTooHigh = localMaxY > maxY + MAX_VERTICAL_DEVIATION;
+
+                if (floorTooLow || ceilingTooHigh) {
+                    anyColumnOutOfRange = true;
+                    break;
+                }
+
+                validColumns.add(new ColumnData(x, z, localMinY, localMaxY, dist));
+            }
+            if (anyColumnOutOfRange) break;
+        }
+
+        if (anyColumnOutOfRange || validColumns.isEmpty()) return false;
+
+        for (ColumnData column : validColumns) {
+            int x = column.x;
+            int z = column.z;
+            int localMinY = column.localMinY;
+            int localMaxY = column.localMaxY;
+            double distance = column.distance;
+
+            for (int y = localMinY; y <= localMaxY; y++) {
+                float relativeY = (float)(y - minY) / totalHeight;
+                float taperFactor = 2.0f * (relativeY - 0.5f);
+                float hourglassMultiplier = 1.0f + (taperFactor * taperFactor * 0.8f);
+
+                int distToSurface = Math.min(y - localMinY, localMaxY - y);
+                float meltStrength = 4.0f / (distToSurface + 1.0f);
+
+                double noise = getImperfectionNoise(origin.getX() + x, y, origin.getZ() + z);
+
+                double targetRadius = (baseRadius * hourglassMultiplier) - (hourglassMultiplier * 0.5);
+                double blendBonus = meltStrength * 1.5;
+                double noiseBonus = noise * 1.2;
+
+                double maxRadiusHere = targetRadius + blendBonus + noiseBonus;
+
+                // Look into making it so speleothems can have different block placers.
+                if (distance < maxRadiusHere) {
+                    cursor.set(origin.getX() + x, y, origin.getZ() + z);
+                    if (canReplace(level, cursor)) {
+                        this.setBlock(level, cursor, Blocks.NETHERRACK.defaultBlockState());
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private record ColumnData(int x, int z, int localMinY, int localMaxY, double distance) {}
+
+    private BlockPos findSurface(WorldGenLevel level, BlockPos start, Direction direction, int maxDistance) {
+        BlockPos.MutableBlockPos mPos = start.mutable();
+        for (int i = 0; i < maxDistance; i++) {
+            BlockState state = level.getBlockState(mPos);
+            if (state.is(BlockTags.BASE_STONE_NETHER) || state.is(JNETags.Blocks.SPELEOTHEM_BASE_BLOCKS)) {
+                return mPos.immutable();
+            }
+            mPos.move(direction);
+        }
+        return null;
+    }
+
+    private boolean canReplace(WorldGenLevel level, BlockPos pos) {
+        return true; // This has not really caused any issues at the moment, but it also sounds like a terrible idea to replace everything.
+    }
+
+    private double getImperfectionNoise(int x, int y, int z) {
+        double n1 = Mth.sin(x * 0.3f) * Mth.cos(y * 0.3f) * Mth.sin(z * 0.3f);
+        double n2 = Mth.cos(x * 0.1f + y * 0.05f) * Mth.sin(z * 0.1f);
+        return n1 + n2;
+    }
+
+//    private BlockPos findSurfaceWithConstraint(WorldGenLevel level, BlockPos start, Direction direction, int maxDistance, int referenceY, int maxDeviation) {
+//        BlockPos.MutableBlockPos mPos = start.mutable();
+//        for (int i = 0; i < maxDistance; i++) {
+//            if (Math.abs(mPos.getY() - referenceY) > maxDeviation) return null;
+//            if (!level.isEmptyBlock(mPos) && level.getBlockState(mPos).isSolid()) return mPos.immutable();
+//
+//            mPos.move(direction);
+//        }
+//        return null;
+//    }
+}

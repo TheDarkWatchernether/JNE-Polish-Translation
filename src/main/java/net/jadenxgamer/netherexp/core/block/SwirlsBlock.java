@@ -121,7 +121,7 @@ public class SwirlsBlock extends AmethystClusterBlock implements BonemealableBlo
         }
     }
 
-    private void swirlPopParticle(Level level, RandomSource random, double x, double y,double z) {
+    private void swirlPopParticle(Level level, RandomSource random, double x, double y, double z) {
         WorldParticleBuilder.create(particle)
                 .setFullBrightLighting()
                 .setSpinData(SpinParticleData.createRandomDirection(random, 0.0f, 1.0f).setCoefficient(0.7f).setEasing(Easing.SINE_IN).build())
@@ -131,7 +131,7 @@ public class SwirlsBlock extends AmethystClusterBlock implements BonemealableBlo
                 .setSpritePicker(SimpleParticleOptions.ParticleSpritePicker.WITH_AGE)
                 .setLifetime(random.nextInt(20, 30))
                 .disableNoClip()
-                .setGravityStrength(0.05f)
+                .setGravity(0.05f)
                 .setMotion(0.0, 0.04, 0.0)
                 .spawn(level, x, y, z);
     }

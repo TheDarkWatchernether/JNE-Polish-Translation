@@ -1,41 +1,37 @@
 package net.jadenxgamer.netherexp.mixin.block;
 
-import net.jadenxgamer.netherexp.config.JNEConfigs;
-import net.jadenxgamer.netherexp.registry.block.JNEBlocks;
-import net.jadenxgamer.netherexp.registry.block.custom.AncientFireBlock;
-import net.jadenxgamer.netherexp.registry.particle.JNEParticleTypes;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import net.jadenxgamer.netherexp.client.assetdriven.FireParticles;
+import net.jadenxgamer.netherexp.core.block.AncientFireBlock;
+import net.jadenxgamer.netherexp.registry.JNEBlocks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.SoulFireBlock;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(BaseFireBlock.class)
-public abstract class BaseFireBlockMixin {
+import java.awt.*;
 
-    @Inject(
-            method = "animateTick",
-            at = @At(value = "HEAD"),
-            cancellable = true
-    )
-    private void netherexp$animateTick(BlockState pState, Level pLevel, BlockPos pPos, RandomSource pRandom, CallbackInfo ci) {
-        if (((BaseFireBlock) (Object) this) instanceof SoulFireBlock && JNEConfigs.IMPROVED_SOUL_FIRE_PARTICLES.get()) {
-            if (pRandom.nextInt(24) == 0) {
-                pLevel.playLocalSound((double)pPos.getX() + 0.5, (double)pPos.getY() + 0.5, (double)pPos.getZ() + 0.5, SoundEvents.FIRE_AMBIENT, SoundSource.BLOCKS, 1.0F + pRandom.nextFloat(), pRandom.nextFloat() * 0.7F + 0.3F, false);
-            }
-            pLevel.addParticle(JNEParticleTypes.SOUL_EMBER.get(), (double)pPos.getX() + 0.5 + pRandom.nextDouble() / 4.0 * (double)(pRandom.nextBoolean() ? 1 : -1), (double)pPos.getY() + 0.6, (double)pPos.getZ() + 0.5 + pRandom.nextDouble() / 4.0 * (double)(pRandom.nextBoolean() ? 1 : -1), 0.0, 0.015, 0.0);
-            ci.cancel();
-        }
+import static net.jadenxgamer.netherexp.config.JNEConfigs.*;
+import static net.jadenxgamer.netherexp.util.ParticleHelper.emberParticle;
+import static net.jadenxgamer.netherexp.util.ParticleHelper.smokeParticle;
+
+@Mixin(BaseFireBlock.class)
+public abstract class BaseFireBlockMixin extends Block {
+
+    public BaseFireBlockMixin(Properties properties) {
+        super(properties);
     }
 
     @Inject(
@@ -43,11 +39,36 @@ public abstract class BaseFireBlockMixin {
             at = @At(value = "HEAD"),
             cancellable = true
     )
-    private static void netherexp$getState(BlockGetter pReader, BlockPos pPos, CallbackInfoReturnable<BlockState> cir) {
-        BlockPos blockpos = pPos.below();
-        BlockState blockstate = pReader.getBlockState(blockpos);
-        if (AncientFireBlock.canSurviveOnBlock(blockstate)) {
+    private static void netherexp$getState(BlockGetter reader, BlockPos pos, CallbackInfoReturnable<BlockState> cir) {
+        BlockState state = reader.getBlockState(pos.below());
+        if (AncientFireBlock.canSurviveOnBlock(state))
             cir.setReturnValue(JNEBlocks.ANCIENT_FIRE.get().defaultBlockState());
-        }
+    }
+
+    @WrapMethod(
+            method = "animateTick"
+    )
+    private void netherexp$betterFireParticles(BlockState state, Level level, BlockPos pos, RandomSource random, Operation<Void> original) {
+        if (IMPROVED_FIRE_PARTICLES.get()) {
+            if (random.nextInt(24) == 0) level.playLocalSound(
+                    (double) pos.getX() + (double) 0.5F, (double) pos.getY() + (double) 0.5F, (double) pos.getZ() + (double) 0.5F,
+                    SoundEvents.FIRE_AMBIENT, SoundSource.BLOCKS, 1.0F + random.nextFloat(), random.nextFloat() * 0.7F + 0.3F, false);
+            ResourceLocation blockId = level.registryAccess().registryOrThrow(Registries.BLOCK).getKey(state.getBlock());
+
+            if (FIRE_SMOKE_PARTICLES.get()) {
+                FireParticles particles = FireParticles.FIRE_PARTICLES.getOrDefault(blockId, FireParticles.DEFAULT);
+                Color smokeStart = particles.smokeStartColors()[random.nextInt(particles.smokeStartColors().length)];
+                Color smokeEnd = particles.smokeEndColors()[random.nextInt(particles.smokeEndColors().length)];
+
+                smokeParticle(level, random, pos.getX(), pos.getY(), pos.getZ(), smokeStart, smokeEnd);
+            }
+            if (FIRE_EMBER_PARTICLES.get()) {
+                FireParticles particles = FireParticles.FIRE_PARTICLES.getOrDefault(blockId, FireParticles.DEFAULT);
+                if (particles != null && particles.emberColors().length > 0) {
+                    Color ember = particles.emberColors()[random.nextInt(particles.emberColors().length)];
+                    emberParticle(level, random, pos.getX(), pos.getY(), pos.getZ(), ember);
+                }
+            }
+        } else original.call(state, level, pos, random);
     }
 }

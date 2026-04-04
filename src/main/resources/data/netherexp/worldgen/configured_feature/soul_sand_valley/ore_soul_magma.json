@@ -7,7 +7,7 @@
       {
         "target": {
           "predicate_type": "minecraft:tag_match",
-          "tag": "minecraft:soul_fire_base_blocks"
+          "tag": "netherexp:soul_magma_replaceable"
         },
         "state": {
           "Name": "netherexp:soul_magma_block"

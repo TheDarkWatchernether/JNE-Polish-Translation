@@ -1,9 +1,8 @@
 {
   "replace": false,
   "values": [
-    "netherexp:grave_cloud_suffocation",
     "netherexp:shotgun_pellet",
-    "netherexp:shotgun_explosion",
-    "netherexp:jackhammer"
+    "netherexp:slug_pellet",
+    "netherexp:shotgun_explosion"
   ]
 }
